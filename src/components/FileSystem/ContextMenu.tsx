@@ -1,7 +1,7 @@
 // src/components/FileSystem/ContextMenu.tsx
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Folder, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { FileTypeConfig, SortBy, ViewMode } from '@/types';
 
 interface ContextMenuProps {
@@ -63,22 +63,18 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
     if (!buttonRef.current || !menuRef.current) return;
 
     const menuRect = menuRef.current.getBoundingClientRect();
-    const submenuWidth = 200; // Approximate submenu width
+    const submenuWidth = 200;
     const windowWidth = window.innerWidth;
-    const isMobile = windowWidth < 450; // Mobile breakpoint
+    const isMobile = windowWidth < 450;
 
     if (isMobile) {
-      // On mobile, show submenu at bottom
       setSubmenuPosition('bottom');
     } else {
-      // Calculate if there's space on the right
       const spaceOnRight = windowWidth - menuRect.right;
 
       if (spaceOnRight >= submenuWidth + 10) {
-        // First priority: enough space on right
         setSubmenuPosition('right');
       } else {
-        // Second priority: not enough space on right, show on left
         setSubmenuPosition('left');
       }
     }
@@ -87,7 +83,6 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
   };
 
   const handleSubmenuLeave = () => {
-    // Small delay to allow moving to submenu
     setTimeout(() => {
       if (!document.querySelector('.submenu:hover') && !document.querySelector('[data-submenu-trigger]:hover')) {
         setActiveSubmenu(null);
@@ -99,13 +94,10 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
     const baseClasses = 'absolute z-50 w-full';
 
     if (submenuPosition === 'right') {
-      // First priority: show on right when enough space
       return `${baseClasses} translate-x-full top-0 left-0`;
     } else if (submenuPosition === 'left') {
-      // Second priority: show on left when not enough space on right
       return `${baseClasses} -translate-x-full top-0 left-0 flex justify-end`;
     } else {
-      // Mobile view: show at bottom
       return `${baseClasses} bottom-0 left-0`;
     }
   };
@@ -116,6 +108,31 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
     }
     return 'w-45 submenu';
   };
+
+  const FolderIcon = () => (
+    <svg
+      width={16}
+      height={16}
+      viewBox="0 0 100 100"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M10 25 L10 85 C10 88 12 90 15 90 L85 90 C88 90 90 88 90 85 L90 30 C90 27 88 25 85 25 Z"
+        fill="#FFA500"
+        opacity="0.9"
+      />
+      <path
+        d="M10 25 L10 20 C10 17 12 15 15 15 L35 15 L42 22 L85 22 C88 22 90 24 90 27 L90 30 L10 30 Z"
+        fill="#FFA500"
+      />
+      <path
+        d="M15 25 L15 85 C15 87 16 88 18 88 L85 88 C87 88 88 87 88 85 L88 30 Z"
+        fill="white"
+        opacity="0.1"
+      />
+    </svg>
+  );
 
   return (
     <>
@@ -171,7 +188,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
                 onClose();
               }}
             >
-              <Folder size={16} />
+              <FolderIcon />
               New Folder
             </button>
 

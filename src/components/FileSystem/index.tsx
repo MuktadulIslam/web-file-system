@@ -2,212 +2,63 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import { Plus, ChevronRight, Eye, FilePlus2 } from 'lucide-react';
-import { FileSystemConfig, FileSystemItem, SortBy, ViewMode } from '@/types';
+import { FileSystemConfig } from '@/types';
 import ContextMenu from './ContextMenu';
 import FileItem from './FileItem';
+import { FileSystemProvider, useFileSystem } from './FileSystemContext';
+import { useFileSystemInit } from './hooks/useFileSystemInit';
+import { useFileSystemItems } from './hooks/useFileSystemItems';
+import { useFileSystemMutations } from './hooks/useFileSystemMutations';
+import { useFileSystemNavigation } from './hooks/useFileSystemNavigation';
+import AddItems from './AddItems';
 
 interface FileSystemProps {
   config: FileSystemConfig;
 }
 
-const FileSystem: React.FC<FileSystemProps> = ({ config }) => {
-  const [items, setItems] = useState<FileSystemItem[]>([]);
-  const [currentPath, setCurrentPath] = useState(':home/');
-  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<SortBy>('name_asc');
-  const [viewMode, setViewMode] = useState<ViewMode>('large');
-  const [loading, setLoading] = useState(true);
-  const [contextMenuOpen, setContextMenuOpen] = useState(false);
-  const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
-  const [pathStack, setPathStack] = useState<{ id: string | null; name: string; path: string }[]>([
-    { id: null, name: ':home', path: ':home/' },
-  ]);
-  const [initialized, setInitialized] = useState(false);
+export default function FileSystem({ config }: FileSystemProps) {
+  return (
+    <FileSystemProvider config={config}>
+      <FileSystemInner/>
+    </FileSystemProvider>
+  );
+}
 
-  const defaultUserId = config.defaultUserId || 'user';
+function FileSystemInner() {
+  const {
+    items,
+    viewMode,
+    setViewMode,
+    loading,
+    contextMenuOpen,
+    setContextMenuOpen,
+    contextMenuPosition,
+    setContextMenuPosition,
+    pathStack,
+    initialized,
+    sortBy,
+    setSortBy,
+    config,
+    handleCreateFile,
+    openContextMenu,
+    closeContextMenu,
+  } = useFileSystem();
 
-  // Initialize database on mount
-  useEffect(() => {
-    const initDB = async () => {
-      try {
-        const response = await fetch('/api/init');
-        const data = await response.json();
-        if (data.success) {
-          setInitialized(true);
-        }
-      } catch (error) {
-        console.error('Failed to initialize database:', error);
-      }
-    };
-    
-    initDB();
-  }, []);
+  const username = config.username || 'guest-user';
 
-  // Fetch items whenever currentFolderId or sortBy changes
-  useEffect(() => {
-    if (!initialized) return;
-    
-    const fetchItems = async () => {
-      setLoading(true);
-      try {
-        const params = new URLSearchParams({
-          sortBy,
-          ...(currentFolderId && { folderId: currentFolderId }),
-        });
+  // Initialize database
+  useFileSystemInit();
 
-        const response = await fetch(`/api/items?${params}`);
-        const data = await response.json();
+  // Fetch items
+  useFileSystemItems();
 
-        if (data.success) {
-          setItems(data.items);
-        }
-      } catch (error) {
-        console.error('Failed to fetch items:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Navigation hooks
+  const { openItem, navigateToPath } = useFileSystemNavigation();
 
-    fetchItems();
-  }, [currentFolderId, sortBy, initialized]);
-
-  const openContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setContextMenuPosition({ x: e.clientX, y: e.clientY });
-    setContextMenuOpen(true);
-  };
-
-  const closeContextMenu = () => {
-    setContextMenuOpen(false);
-    setContextMenuPosition(null);
-  };
-
-  const createFolder = async () => {
-    const name = prompt('Enter folder name:');
-    if (!name) return;
-
-    const path = currentPath + name + '/';
-
-    try {
-      const response = await fetch('/api/items', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          isFolder: true,
-          fileKey: null,
-          parentFolderId: currentFolderId,
-          createdBy: defaultUserId,
-          path,
-        }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setItems([...items, data.item]);
-      }
-    } catch (error) {
-      console.error('Failed to create folder:', error);
-    }
-  };
-
-  const createFile = async (fileKey: string) => {
-    const fileTypeConfig = config.fileTypes.find((ft) => ft.key === fileKey);
-    if (!fileTypeConfig) return;
-
-    const name = prompt(`Enter ${fileTypeConfig.name} name:`);
-    if (!name) return;
-
-    const path = currentPath + name;
-
-    try {
-      const response = await fetch('/api/items', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          isFolder: false,
-          fileKey,
-          parentFolderId: currentFolderId,
-          createdBy: defaultUserId,
-          path,
-        }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setItems([...items, data.item]);
-      }
-    } catch (error) {
-      console.error('Failed to create file:', error);
-    }
-  };
-
-  const openItem = (item: FileSystemItem) => {
-    if (item.is_folder) {
-      setCurrentFolderId(item.id);
-      setCurrentPath(item.path);
-      setPathStack([...pathStack, { id: item.id, name: item.name, path: item.path }]);
-    } else {
-      // Handle file opening - could trigger a modal with the component
-      console.log('Open file:', item);
-    }
-  };
-
-  const navigateToPath = (index: number) => {
-    const targetFolder = pathStack[index];
-    setCurrentFolderId(targetFolder.id);
-    setCurrentPath(targetFolder.path);
-    setPathStack(pathStack.slice(0, index + 1));
-  };
-
-  const deleteItem = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this item?')) return;
-
-    try {
-      const response = await fetch(`/api/items?id=${id}`, {
-        method: 'DELETE',
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setItems(items.filter((item) => item.id !== id));
-      }
-    } catch (error) {
-      console.error('Failed to delete item:', error);
-    }
-  };
-
-  const renameItem = async (item: FileSystemItem) => {
-    const newName = prompt('Enter new name:', item.name);
-    if (!newName || newName === item.name) return;
-
-    const pathParts = item.path.split('/');
-    pathParts[pathParts.length - (item.is_folder ? 2 : 1)] = newName;
-    const newPath = pathParts.join('/');
-
-    try {
-      const response = await fetch('/api/items', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: item.id,
-          name: newName,
-          updatedBy: defaultUserId,
-          newPath,
-        }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setItems(items.map((i) => (i.id === item.id ? data.item : i)));
-      }
-    } catch (error) {
-      console.error('Failed to rename item:', error);
-    }
-  };
+  // Mutations hooks
+  const { createFolder, createFile, deleteItem, renameItem } = useFileSystemMutations(username);
 
   if (!initialized) {
     return (
@@ -234,7 +85,7 @@ const FileSystem: React.FC<FileSystemProps> = ({ config }) => {
             </React.Fragment>
           ))}
         </div>
-        
+
         {/* Create New Button on the right */}
         <button
           onClick={openContextMenu}
@@ -293,42 +144,10 @@ const FileSystem: React.FC<FileSystemProps> = ({ config }) => {
                 onRename={renameItem}
               />
             ))}
-            
+
             {/* Plus button at the end of items (only for icon views) */}
             {viewMode !== 'list' && viewMode !== 'details' && (
-              <button
-                onClick={openContextMenu}
-                className="inline-flex flex-col items-center justify-center p-2 hover:bg-gray-100 rounded group cursor-pointer"
-                style={{
-                  width: viewMode === 'extra_large' ? '250px' : 
-                         viewMode === 'large' ? '200px' : 
-                         viewMode === 'medium' ? '150px' : '120px',
-                  marginRight: viewMode === 'extra_large' ? '60px' : 
-                              viewMode === 'large' ? '50px' : 
-                              viewMode === 'medium' ? '40px' : '30px',
-                  marginBottom: '20px',
-                }}
-              >
-                <div 
-                  className="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg group-hover:border-blue-500 group-hover:bg-blue-50 transition-colors"
-                  style={{
-                    width: viewMode === 'extra_large' ? '80px' : 
-                           viewMode === 'large' ? '64px' : 
-                           viewMode === 'medium' ? '48px' : '32px',
-                    height: viewMode === 'extra_large' ? '80px' : 
-                            viewMode === 'large' ? '64px' : 
-                            viewMode === 'medium' ? '48px' : '32px',
-                  }}
-                >
-                  <Plus 
-                    size={viewMode === 'extra_large' ? 32 : 
-                          viewMode === 'large' ? 24 : 
-                          viewMode === 'medium' ? 20 : 16} 
-                    className="text-gray-400 group-hover:text-blue-500" 
-                  />
-                </div>
-                <span className="text-sm mt-2 text-gray-500 group-hover:text-blue-600">Add New</span>
-              </button>
+              <AddItems/>
             )}
           </div>
         )}
@@ -341,7 +160,7 @@ const FileSystem: React.FC<FileSystemProps> = ({ config }) => {
         position={contextMenuPosition}
         fileTypes={config.fileTypes}
         onCreateFolder={createFolder}
-        onCreateFile={createFile}
+        onCreateFile={handleCreateFile}
         sortBy={sortBy}
         onSortChange={setSortBy}
         viewMode={viewMode}
@@ -350,5 +169,3 @@ const FileSystem: React.FC<FileSystemProps> = ({ config }) => {
     </div>
   );
 };
-
-export default FileSystem;

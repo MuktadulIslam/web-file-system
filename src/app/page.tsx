@@ -48,13 +48,13 @@ export default function Home() {
 
   return (
     <main>
-      <FileSystem
-        config={{
-          fileTypes,
-          folderColor: '#FFA500',
-          defaultUserId: 'demo-user',
-        }}
-      />
+        <FileSystem
+          config={{
+            fileTypes,
+            folderColor: '#FFA500',
+            username: 'muktadul',
+          }}
+        />
     </main>
   );
 }

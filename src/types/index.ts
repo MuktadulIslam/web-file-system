@@ -30,8 +30,8 @@ export type ViewMode = 'extra_large' | 'large' | 'medium' | 'small' | 'list' | '
 
 export interface FileSystemConfig {
     fileTypes: FileTypeConfig[];
+    username: string;
     folderColor?: string;
-    defaultUserId?: string;
 }
 
 export interface ContextMenuPosition {
