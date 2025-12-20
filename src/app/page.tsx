@@ -2,8 +2,7 @@
 
 'use client';
 
-// import FileSystem from '@/components/FileSystem';
-import FileSystem from '@/components/FileSystem2';
+import FileSystem from '@/components/FileSystem';
 import { FileTypeConfig } from '@/types';
 import { BookOpen, ClipboardCheck, Video, FileText, Users } from 'lucide-react';
 

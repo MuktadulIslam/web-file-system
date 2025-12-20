@@ -41,7 +41,7 @@ export function FileSystemContextProvider({ children, config }: { children: Reac
     const [sortBy, setSortBy] = useState<SortBy>('name_asc');
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [pathStack, setPathStack] = useState<PathStackItem[]>([
-        { id: null, name: ':home', path: ':home/' },
+        { id: null, name: 'home', path: 'home/' },
     ]);
     const [openedFile, setOpenedFile] = useState<OpenedFile | null>(null);
 
@@ -57,6 +57,7 @@ export function FileSystemContextProvider({ children, config }: { children: Reac
     };
 
     const openFile = (item: FileSystemItem) => {
+        console.log('Opening file:', item);
         if (item.is_folder) return;
 
         const fileTypeConfig = config.fileTypes.find(ft => ft.key === item.file_key);

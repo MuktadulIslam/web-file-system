@@ -1,7 +1,6 @@
 // src/components/FileSystem/FileItem.tsx
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Trash2, Edit2 } from 'lucide-react';
 import { FileSystemItem, ViewMode, FileTypeConfig } from '@/types';
 import toast from 'react-hot-toast';
 

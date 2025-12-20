@@ -68,7 +68,7 @@ export async function initializeDatabase(): Promise<void> {
             // Insert home folder
             await pool.query(`
         INSERT INTO file_system_items (path, is_folder, parent_folder_id, name, created_by, updated_by)
-        VALUES (':home/', true, NULL, ':home', 'system', 'system');
+        VALUES ('home/', true, NULL, 'home', 'system', 'system');
       `);
 
             console.log('Database initialized successfully');

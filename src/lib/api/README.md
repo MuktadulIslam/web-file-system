@@ -69,7 +69,7 @@ const newFolder = await createItem({
   fileKey: null,
   parentFolderId: '123',
   createdBy: 'user1',
-  path: ':home/My Folder/',
+  path: 'home/My Folder/',
 });
 ```
 
