@@ -34,10 +34,6 @@ interface FileSystemContextType {
     initialized: boolean;
     setInitialized: React.Dispatch<React.SetStateAction<boolean>>;
     config: FileSystemConfig;
-    // Actions
-    handleCreateFile: (fileKey: string) => void;
-    openContextMenu: (e: React.MouseEvent) => void;
-    closeContextMenu: () => void;
 }
 
 const FileSystemContext = createContext<FileSystemContextType | undefined>(undefined);
@@ -55,24 +51,6 @@ export const FileSystemProvider: React.FC<{ children: ReactNode, config: FileSys
         { id: null, name: ':home', path: ':home/' },
     ]);
     const [initialized, setInitialized] = useState(false);
-    const { createFile } = useFileSystemMutations(config.username);
-
-    const openContextMenu = (e: React.MouseEvent) => {
-        e.preventDefault();
-        setContextMenuPosition({ x: e.clientX, y: e.clientY });
-        setContextMenuOpen(true);
-    };
-    
-    const closeContextMenu = () => {
-        setContextMenuOpen(false);
-        setContextMenuPosition(null);
-    };
-
-    const handleCreateFile = (fileKey: string) => {
-        const fileTypeConfig = config.fileTypes.find((ft) => ft.key === fileKey);
-        if (!fileTypeConfig) return;
-        createFile(fileKey, fileTypeConfig.name);
-    };
 
     return (
         <FileSystemContext.Provider
@@ -97,11 +75,7 @@ export const FileSystemProvider: React.FC<{ children: ReactNode, config: FileSys
                 setPathStack,
                 initialized,
                 setInitialized,
-                config,
-
-                handleCreateFile,
-                openContextMenu,
-                closeContextMenu,
+                config
             }}
         >
             {children}

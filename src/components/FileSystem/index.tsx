@@ -13,6 +13,7 @@ import { useFileSystemItems } from './hooks/useFileSystemItems';
 import { useFileSystemMutations } from './hooks/useFileSystemMutations';
 import { useFileSystemNavigation } from './hooks/useFileSystemNavigation';
 import AddItems from './AddItems';
+import { ReactQueryProvider } from '../FileSystem2/QueryClientProvider';
 
 interface FileSystemProps {
   config: FileSystemConfig;
@@ -20,9 +21,11 @@ interface FileSystemProps {
 
 export default function FileSystem({ config }: FileSystemProps) {
   return (
-    <FileSystemProvider config={config}>
-      <FileSystemInner/>
-    </FileSystemProvider>
+    <ReactQueryProvider>
+      <FileSystemProvider config={config}>
+        <FileSystemInner />
+      </FileSystemProvider>
+    </ReactQueryProvider>
   );
 }
 
@@ -40,10 +43,7 @@ function FileSystemInner() {
     initialized,
     sortBy,
     setSortBy,
-    config,
-    handleCreateFile,
-    openContextMenu,
-    closeContextMenu,
+    config
   } = useFileSystem();
 
   const username = config.username || 'guest-user';
@@ -58,7 +58,26 @@ function FileSystemInner() {
   const { openItem, navigateToPath } = useFileSystemNavigation();
 
   // Mutations hooks
-  const { createFolder, createFile, deleteItem, renameItem } = useFileSystemMutations(username);
+  const { createFolder, deleteItem, renameItem } = useFileSystemMutations(username);
+
+  const { createFile } = useFileSystemMutations(config.username);
+
+  const openContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setContextMenuPosition({ x: e.clientX, y: e.clientY });
+    setContextMenuOpen(true);
+  };
+
+  const closeContextMenu = () => {
+    setContextMenuOpen(false);
+    setContextMenuPosition(null);
+  };
+
+  const handleCreateFile = (fileKey: string) => {
+    const fileTypeConfig = config.fileTypes.find((ft) => ft.key === fileKey);
+    if (!fileTypeConfig) return;
+    createFile(fileKey, fileTypeConfig.name);
+  };
 
   if (!initialized) {
     return (
@@ -147,7 +166,7 @@ function FileSystemInner() {
 
             {/* Plus button at the end of items (only for icon views) */}
             {viewMode !== 'list' && viewMode !== 'details' && (
-              <AddItems/>
+              <AddItems />
             )}
           </div>
         )}

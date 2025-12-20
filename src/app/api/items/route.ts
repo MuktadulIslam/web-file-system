@@ -2,32 +2,16 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { FileSystemItem } from '@/types';
 
 // GET items in a folder
 export async function GET(request: NextRequest) {
     try {
         const searchParams = request.nextUrl.searchParams;
         const folderId = searchParams.get('folderId');
-        const sortBy = searchParams.get('sortBy') || 'name_asc';
-
-        let orderBy = 'name ASC';
-        switch (sortBy) {
-            case 'created_asc':
-                orderBy = 'created_at ASC';
-                break;
-            case 'created_desc':
-                orderBy = 'created_at DESC';
-                break;
-            case 'name_desc':
-                orderBy = 'name DESC';
-                break;
-        }
 
         const result = await query(
             `SELECT * FROM file_system_items 
-       WHERE parent_folder_id ${folderId ? '= $1' : 'IS NULL'}
-       ORDER BY is_folder DESC, ${orderBy}`,
+       WHERE parent_folder_id ${folderId ? '= $1' : 'IS NULL'}`,
             folderId ? [folderId] : []
         );
 
