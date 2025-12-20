@@ -1,9 +1,8 @@
 'use client'
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
 
 import { useFolderItems } from "./hooks/useFolderItems";
-import { ChevronRight, Eye, FilePlus2, Scissors, Copy, Edit3, Trash2, ChevronDown } from "lucide-react";
 import { FileSystemContextProvider } from "./context/FileSystemContextProvider";
 import { FileSystemConfig } from "./types";
 import { useFileSystem } from "./context/FileSystemContextProvider";
@@ -13,7 +12,6 @@ import { ReactQueryProvider } from "./QueryClientProvider";
 import { useSyncURLParams } from "./hooks/useSyncURLParams";
 import AddItems from "./components/AddItems";
 import { useRenameItem } from "./hooks/useRenameItem";
-import { FaRegFolderClosed } from "react-icons/fa6";
 import PathBar from "./components/PathBar";
 import Toolbar from "./components/Toolbar";
 
