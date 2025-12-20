@@ -12,6 +12,7 @@ import ContextMenu from "./components/FileContextMenu";
 import { ReactQueryProvider } from "./QueryClientProvider";
 import { useSyncURLParams } from "./hooks/useSyncURLParams";
 import AddItems from "./components/AddItems";
+import { useRenameItem } from "./hooks/useRenameItem";
 
 export default function FileSystem({ config }: { config: FileSystemConfig }) {
     return (
@@ -27,8 +28,19 @@ export default function FileSystem({ config }: { config: FileSystemConfig }) {
 function FileSystemInner() {
     const { currentFolderId, pathStack, items, setItems, config, viewMode, openContextMenu, navigateToPath, openFile, openedFile, closeFile } = useFileSystem()
     const { data, isLoading, isError, error } = useFolderItems(currentFolderId);
+    const renameMutation = useRenameItem();
 
     useSyncURLParams();
+
+    const handleRename = (itemId: string, newName: string) => {
+        console.log("Renaming item:", itemId, newName);
+        renameMutation.mutate({
+            itemId,
+            newName,
+            createdByName: config.username,
+            parentFolderId: currentFolderId
+        });
+    };
 
 
     useEffect(() => {
@@ -37,7 +49,6 @@ function FileSystemInner() {
 
     if (isLoading) return <div>Loading...</div>;
     if (isError) return <div>Error: {error.message}</div>;
-    if (data) console.log("Folder Items:", data);
 
     return (
         <div className="w-full h-screen bg-gray-50 flex flex-col">
@@ -112,9 +123,10 @@ function FileSystemInner() {
                                 viewMode={viewMode}
                                 fileTypes={config.fileTypes}
                                 folderColor={config.folderColor}
+                                allItems={items}
                                 onOpen={() => { }}
                                 onDelete={() => { }}
-                                onRename={() => { }}
+                                onRename={handleRename}
                             />
                         ))}
 

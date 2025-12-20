@@ -1,17 +1,19 @@
 // src/components/FileSystem/FileItem.tsx
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Trash2, Edit2 } from 'lucide-react';
 import { FileSystemItem, ViewMode, FileTypeConfig } from '@/types';
+import toast from 'react-hot-toast';
 
 interface FileItemProps {
     item: FileSystemItem;
     viewMode: ViewMode;
     fileTypes: FileTypeConfig[];
     folderColor?: string;
+    allItems: FileSystemItem[];
     onOpen: (item: FileSystemItem) => void;
     onDelete: (id: string) => void;
-    onRename: (item: FileSystemItem) => void;
+    onRename: (itemId: string, newName: string) => void;
 }
 
 const FileItem: React.FC<FileItemProps> = ({
@@ -19,16 +21,82 @@ const FileItem: React.FC<FileItemProps> = ({
     viewMode,
     fileTypes,
     folderColor = '#FFA500',
+    allItems,
     onOpen,
     onDelete,
     onRename,
 }) => {
+    const [isRenaming, setIsRenaming] = useState(false);
+    const [newName, setNewName] = useState(item.name);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (isRenaming && inputRef.current) {
+            inputRef.current.focus();
+            inputRef.current.select();
+        }
+    }, [isRenaming]);
+
     const getFileTypeConfig = () => {
         if (item.is_folder) return null;
         return fileTypes.find((ft) => ft.key === item.file_key);
     };
 
     const fileTypeConfig = getFileTypeConfig();
+
+    const handleDoubleClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setIsRenaming(true);
+        setNewName(item.name);
+    };
+
+    const handleRenameSubmit = () => {
+        const trimmedName = newName.trim();
+
+        if (!trimmedName) {
+            toast.error('Name cannot be empty');
+            setNewName(item.name);
+            setIsRenaming(false);
+            return;
+        }
+
+        if (trimmedName === item.name) {
+            setIsRenaming(false);
+            return;
+        }
+
+        // Check for duplicate names in the same folder with the same type (folder or file)
+        const duplicate = allItems.find(
+            (i) =>
+                i.id !== item.id &&
+                i.name === trimmedName &&
+                i.is_folder === item.is_folder
+        );
+
+        if (duplicate) {
+            toast.error(`A ${item.is_folder ? 'folder' : 'file'} with the name "${trimmedName}" already exists`);
+            setNewName(item.name);
+            setIsRenaming(false);
+            return;
+        }
+
+        onRename(item.id, trimmedName);
+        setIsRenaming(false);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            handleRenameSubmit();
+        } else if (e.key === 'Escape') {
+            setNewName(item.name);
+            setIsRenaming(false);
+        }
+    };
+
+    const handleBlur = () => {
+        setNewName(item.name);
+        setIsRenaming(false);
+    };
 
     const getInitials = () => {
         if (!item.file_key) return '';
@@ -185,29 +253,27 @@ const FileItem: React.FC<FileItemProps> = ({
     if (viewMode === 'list') {
         return (
             <div className="flex items-center gap-2 py-2 px-3 hover:bg-gray-50 rounded cursor-pointer group">
-                <div onClick={() => onOpen(item)} className="flex items-center gap-2 flex-1">
+                <div onClick={() => !isRenaming && onOpen(item)} className="flex items-center gap-2 flex-1">
                     {renderIcon()}
-                    <span className="text-sm">{item.name}</span>
-                </div>
-                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onRename(item);
-                        }}
-                        className="p-1 hover:bg-gray-200 rounded"
-                    >
-                        <Edit2 size={14} />
-                    </button>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onDelete(item.id);
-                        }}
-                        className="p-1 hover:bg-red-100 rounded text-red-600"
-                    >
-                        <Trash2 size={14} />
-                    </button>
+                    {isRenaming ? (
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={newName}
+                            onChange={(e) => setNewName(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            onBlur={handleBlur}
+                            className="text-sm px-1 py-0.5 border border-blue-500 rounded focus:outline-none focus:ring-1 focus:ring-inset focus:ring-blue-500"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    ) : (
+                        <span
+                            className="text-sm select-none"
+                            onDoubleClick={handleDoubleClick}
+                        >
+                            {item.name}
+                        </span>
+                    )}
                 </div>
             </div>
         );
@@ -216,37 +282,33 @@ const FileItem: React.FC<FileItemProps> = ({
     if (viewMode === 'details') {
         return (
             <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-4 py-2 px-3 hover:bg-gray-50 rounded cursor-pointer group items-center">
-                <div onClick={() => onOpen(item)} className="flex items-center gap-2">
+                <div onClick={() => !isRenaming && onOpen(item)} className="flex items-center gap-2">
                     {renderIcon()}
-                    <span className="text-sm truncate">{item.name}</span>
+                    {isRenaming ? (
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={newName}
+                            onChange={(e) => setNewName(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            onBlur={handleBlur}
+                            className="text-sm px-1 py-0.5 border border-blue-500 rounded focus:outline-none focus:ring-1 focus:ring-inset focus:ring-blue-500 w-full"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    ) : (
+                        <span
+                            className="text-sm truncate select-none"
+                            onDoubleClick={handleDoubleClick}
+                        >
+                            {item.name}
+                        </span>
+                    )}
                 </div>
                 <span className="text-sm text-gray-600">{formatDate(item.updated_at)}</span>
                 <span className="text-sm text-gray-600">
                     {item.is_folder ? 'Folder' : fileTypeConfig?.name || 'File'}
                 </span>
-                <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">{item.created_by}</span>
-                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onRename(item);
-                            }}
-                            className="p-1 hover:bg-gray-200 rounded"
-                        >
-                            <Edit2 size={14} />
-                        </button>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onDelete(item.id);
-                            }}
-                            className="p-1 hover:bg-red-100 rounded text-red-600"
-                        >
-                            <Trash2 size={14} />
-                        </button>
-                    </div>
-                </div>
+                <span className="text-sm text-gray-600">{item.created_by}</span>
             </div>
         );
     }
@@ -263,34 +325,31 @@ const FileItem: React.FC<FileItemProps> = ({
                 marginRight: `${gap}px`,
                 marginBottom: '20px',
             }}
-            onClick={() => onOpen(item)}
+            onClick={() => !isRenaming && onOpen(item)}
         >
-            <div className="relative">
-                {renderIcon()}
-                <div className="absolute -top-2 -right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onRename(item);
-                        }}
-                        className="p-1 bg-white hover:bg-gray-200 rounded shadow-md"
+            {renderIcon()}
+
+            <div className="w-full h-6 flex items-center justify-center">
+                {isRenaming ? (
+                    <input
+                        ref={inputRef}
+                        type="text"
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        onBlur={handleBlur}
+                        className="text-sm mt-2 px-1 py-0.5 rounded focus:outline-none focus:ring-1 focus:ring-inset focus:ring-blue-500 text-center w-full"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                ) : (
+                    <span
+                        className="text-sm mt-1 px-1 py-0.5  rounded text-center w-full select-none"
+                        onDoubleClick={handleDoubleClick}
                     >
-                        <Edit2 size={12} />
-                    </button>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onDelete(item.id);
-                        }}
-                        className="p-1 bg-white hover:bg-red-100 rounded shadow-md text-red-600"
-                    >
-                        <Trash2 size={12} />
-                    </button>
-                </div>
+                        {item.name}
+                    </span>
+                )}
             </div>
-            <span className="text-sm mt-2 text-center break-words w-full px-1">
-                {item.name}
-            </span>
         </div>
     );
 };
