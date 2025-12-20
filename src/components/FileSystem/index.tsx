@@ -27,7 +27,7 @@ export default function FileSystem({ config }: { config: FileSystemConfig }) {
 }
 
 function FileSystemInner() {
-    const { currentFolderId, pathStack, items, setItems, config, viewMode, setViewMode, sortBy, setSortBy, openContextMenu, navigateToPath, openFile, navigateToFolder, openedFile, closeFile } = useFileSystem()
+    const { currentFolderId, pathStack, items, setItems, config, viewMode, setViewMode, sortBy, setSortBy, openContextMenu, navigateToPath, openMenuItem, navigateToFolder, openedFile, closeFile } = useFileSystem()
     const { data, isLoading, isError, error } = useFolderItems(currentFolderId);
     const renameMutation = useRenameItem();
 
@@ -76,7 +76,7 @@ function FileSystemInner() {
                         <div className="text-gray-500">Loading...</div>
                     </div>
                 ) : items.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+                    <div className="h-full w-full flex flex-col items-center justify-center py-12 text-gray-500">
                         <p>This folder is empty</p>
                         <p className="text-sm">Click "Create New" to create files or folders</p>
                     </div>
@@ -92,7 +92,7 @@ function FileSystemInner() {
                                 fileTypes={config.fileTypes}
                                 folderColor={config.folderColor}
                                 allItems={items}
-                                onOpen={navigateToFolder}
+                                onOpen={openMenuItem}
                                 onDelete={() => { }}
                                 onRename={handleRename}
                             />

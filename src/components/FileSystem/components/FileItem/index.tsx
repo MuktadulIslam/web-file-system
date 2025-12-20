@@ -1,8 +1,10 @@
 // src/components/FileSystem/FileItem.tsx
 
 import React, { useState, useRef, useEffect } from 'react';
-import { FileSystemItem, ViewMode, FileTypeConfig } from '@/types';
+import { FileSystemItem, ViewMode, FileTypeConfig } from '../../types';
 import toast from 'react-hot-toast';
+import { getItemGap, getItemWidth } from './getSizeForViewMode';
+import ItemIcon from './ItemIcon';
 
 interface FileItemProps {
     item: FileSystemItem;
@@ -36,6 +38,8 @@ const FileItem: React.FC<FileItemProps> = ({
         }
     }, [isRenaming]);
 
+    
+
     const getFileTypeConfig = () => {
         if (item.is_folder) return null;
         return fileTypes.find((ft) => ft.key === item.file_key);
@@ -45,8 +49,14 @@ const FileItem: React.FC<FileItemProps> = ({
 
     const handleDoubleClick = (e: React.MouseEvent) => {
         e.stopPropagation();
+        e.preventDefault();
         setIsRenaming(true);
         setNewName(item.name);
+    };
+
+    const handleNameClick = (e: React.MouseEvent) => {
+        // Prevent the parent's onClick from firing when clicking on the name
+        e.stopPropagation();
     };
 
     const handleRenameSubmit = () => {
@@ -97,152 +107,7 @@ const FileItem: React.FC<FileItemProps> = ({
         setIsRenaming(false);
     };
 
-    const getInitials = () => {
-        if (!item.file_key) return '';
-        const words = item.file_key.split('-');
-        if (words.length === 1) {
-            return item.file_key.substring(0, 2).toUpperCase();
-        }
-        return (words[0][0] + words[1][0]).toUpperCase();
-    };
 
-    const renderIcon = () => {
-        if (item.is_folder) {
-            // Render folder as SVG with 3D look
-            return (
-                <div style={{ width: `${iconSize}px`, height: `${iconSize}px` }}>
-                    <svg
-                        width={iconSize}
-                        height={iconSize}
-                        viewBox="0 0 100 100"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        {/* Folder back */}
-                        <path
-                            d="M10 25 L10 85 C10 88 12 90 15 90 L85 90 C88 90 90 88 90 85 L90 30 C90 27 88 25 85 25 Z"
-                            fill={folderColor}
-                            opacity="0.9"
-                        />
-                        {/* Folder tab */}
-                        <path
-                            d="M10 25 L10 20 C10 17 12 15 15 15 L35 15 L42 22 L85 22 C88 22 90 24 90 27 L90 30 L10 30 Z"
-                            fill={folderColor}
-                        />
-                        {/* Folder front highlight */}
-                        <path
-                            d="M15 25 L15 85 C15 87 16 88 18 88 L85 88 C87 88 88 87 88 85 L88 30 Z"
-                            fill="white"
-                            opacity="0.1"
-                        />
-                    </svg>
-                </div>
-            );
-        }
-
-        // Render file with paper-like appearance
-        const IconComponent = fileTypeConfig?.icon;
-        const contentIconSize = iconSize * 0.5;
-
-        return (
-            <div style={{ width: `${iconSize}px`, height: `${iconSize}px`, position: 'relative' }}>
-                <svg
-                    width={iconSize}
-                    height={iconSize}
-                    viewBox="0 0 100 100"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                >
-                    {/* Paper/file shape - made wider */}
-                    <path
-                        d="M15 5 L70 5 L85 20 L85 95 L15 95 Z"
-                        fill="white"
-                        stroke="#d1d5db"
-                        strokeWidth="2"
-                    />
-                    {/* Folded corner */}
-                    <path
-                        d="M70 5 L70 20 L85 20 Z"
-                        fill="#e5e7eb"
-                        stroke="#d1d5db"
-                        strokeWidth="2"
-                    />
-                    {/* Color accent at top */}
-                    <rect
-                        x="15"
-                        y="5"
-                        width="55"
-                        height="8"
-                        fill={fileTypeConfig?.color || '#9ca3af'}
-                        opacity="0.7"
-                    />
-                </svg>
-
-                {/* Icon or initials inside the file */}
-                <div
-                    style={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    {IconComponent ? (
-                        <IconComponent size={contentIconSize} style={{ color: fileTypeConfig.color }} />
-                    ) : (
-                        <div
-                            className="flex items-center justify-center font-bold rounded"
-                            style={{
-                                width: `${contentIconSize}px`,
-                                height: `${contentIconSize}px`,
-                                fontSize: `${contentIconSize / 2.5}px`,
-                                backgroundColor: fileTypeConfig?.color || '#ffffff',
-                                color: fileTypeConfig?.color ? '#ffffff' : '#000000',
-                                border: !fileTypeConfig?.color ? '1px solid #ccc' : 'none',
-                            }}
-                        >
-                            {getInitials()}
-                        </div>
-                    )}
-                </div>
-            </div>
-        );
-    };
-
-    const getIconSize = () => {
-        switch (viewMode) {
-            case 'extra_large': return 200;
-            case 'large': return 64;
-            case 'medium': return 48;
-            case 'small': return 32;
-            default: return 16;
-        }
-    };
-
-    const iconSize = getIconSize();
-
-    const getItemWidth = () => {
-        switch (viewMode) {
-            case 'extra_large': return 250;
-            case 'large': return 200;
-            case 'medium': return 150;
-            case 'small': return 120;
-            default: return 'auto';
-        }
-    };
-
-    const getItemGap = () => {
-        switch (viewMode) {
-            case 'extra_large': return 60;
-            case 'large': return 50;
-            case 'medium': return 40;
-            case 'small': return 30;
-            default: return 0;
-        }
-    };
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
@@ -253,7 +118,13 @@ const FileItem: React.FC<FileItemProps> = ({
         return (
             <div className="flex items-center gap-2 py-2 px-3 hover:bg-gray-50 rounded cursor-pointer group">
                 <div onClick={() => !isRenaming && onOpen(item)} className="flex items-center gap-2 flex-1">
-                    {renderIcon()}
+                    <ItemIcon
+                        isFolder={item.is_folder}
+                        fileTypeConfig={fileTypeConfig}
+                        viewMode={viewMode}
+                        folderColor={folderColor}
+                    />
+
                     {isRenaming ? (
                         <input
                             ref={inputRef}
@@ -268,6 +139,7 @@ const FileItem: React.FC<FileItemProps> = ({
                     ) : (
                         <span
                             className="text-sm select-none"
+                            onClick={handleNameClick}
                             onDoubleClick={handleDoubleClick}
                         >
                             {item.name}
@@ -282,7 +154,13 @@ const FileItem: React.FC<FileItemProps> = ({
         return (
             <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-4 py-2 px-3 hover:bg-gray-50 rounded cursor-pointer group items-center">
                 <div onClick={() => !isRenaming && onOpen(item)} className="flex items-center gap-2">
-                    {renderIcon()}
+                    <ItemIcon
+                        isFolder={item.is_folder}
+                        fileTypeConfig={fileTypeConfig}
+                        viewMode={viewMode}
+                        folderColor={folderColor}
+                    />
+
                     {isRenaming ? (
                         <input
                             ref={inputRef}
@@ -297,6 +175,7 @@ const FileItem: React.FC<FileItemProps> = ({
                     ) : (
                         <span
                             className="text-sm truncate select-none"
+                            onClick={handleNameClick}
                             onDoubleClick={handleDoubleClick}
                         >
                             {item.name}
@@ -313,8 +192,8 @@ const FileItem: React.FC<FileItemProps> = ({
     }
 
     // Icon views (extra_large, large, medium, small)
-    const width = getItemWidth();
-    const gap = getItemGap();
+    const width = getItemWidth(viewMode);
+    const gap = getItemGap(viewMode);
 
     return (
         <div
@@ -326,7 +205,12 @@ const FileItem: React.FC<FileItemProps> = ({
             }}
             onClick={() => !isRenaming && onOpen(item)}
         >
-            {renderIcon()}
+            <ItemIcon
+                isFolder={item.is_folder}
+                fileTypeConfig={fileTypeConfig}
+                viewMode={viewMode}
+                folderColor={folderColor}
+            />
 
             <div className="w-full h-6 flex items-center justify-center">
                 {isRenaming ? (
@@ -343,6 +227,7 @@ const FileItem: React.FC<FileItemProps> = ({
                 ) : (
                     <span
                         className="text-sm mt-1 px-1 py-0.5  rounded text-center w-full select-none"
+                        onClick={handleNameClick}
                         onDoubleClick={handleDoubleClick}
                     >
                         {item.name}

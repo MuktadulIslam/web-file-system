@@ -27,7 +27,7 @@ interface FileSystemContextType {
     closeContextMenu: () => void;
     navigateToFolder: (folder: FileSystemItem) => void;
     navigateToPath: (index: number) => void;
-    openFile: (item: FileSystemItem) => void;
+    openMenuItem: (item: FileSystemItem) => void;
     closeFile: () => void;
 }
 
@@ -56,16 +56,6 @@ export function FileSystemContextProvider({ children, config }: { children: Reac
         setContextMenuPosition(null);
     };
 
-    const openFile = (item: FileSystemItem) => {
-        console.log('Opening file:', item);
-        if (item.is_folder) return;
-
-        const fileTypeConfig = config.fileTypes.find(ft => ft.key === item.file_key);
-        if (fileTypeConfig) {
-            setOpenedFile({ item, fileTypeConfig });
-        }
-    };
-
     const closeFile = () => {
         setOpenedFile(null);
     };
@@ -75,6 +65,18 @@ export function FileSystemContextProvider({ children, config }: { children: Reac
         setPathStack,
         setCurrentFolderId
     });
+
+    const openMenuItem = (item: FileSystemItem) => {
+        if (item.is_folder) {
+            navigateToFolder(item);
+            return;
+        }
+
+        const fileTypeConfig = config.fileTypes.find(ft => ft.key === item.file_key);
+        if (fileTypeConfig) {
+            setOpenedFile({ item, fileTypeConfig });
+        }
+    };
 
     return (
         <FileSystemContext.Provider
@@ -101,7 +103,7 @@ export function FileSystemContextProvider({ children, config }: { children: Reac
                 closeContextMenu,
                 navigateToFolder,
                 navigateToPath,
-                openFile,
+                openMenuItem,
                 closeFile
             }}
         >
